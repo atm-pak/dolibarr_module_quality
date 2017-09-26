@@ -3,9 +3,15 @@
 	<table width="100%" class="border">
 		<tbody>
 			<tr class="label">
-				<td width="25%">[langs.transnoentities(PlaylistTitle)]</td>
+				<td width="25%">[langs.transnoentities(numeroDeLot)]</td>
 				<td>
-					[view.showTitle;strconv=no]
+					[view.nlot;strconv=no]
+				</td>
+			</tr>
+			<tr class="label">
+				<td width="25%">[langs.transnoentities(numeroDeLot)]</td>
+				<td>
+					YOO
 				</td>
 			</tr>
 

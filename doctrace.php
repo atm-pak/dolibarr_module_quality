@@ -4,12 +4,14 @@ require 'config.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/product.lib.php';
 dol_include_once('/quality/class/doctrace.class.php');
 dol_include_once('/quality/lib/quality.lib.php');
 
 if(empty($user->rights->quality->all->read)) accessforbidden();
 
-$langs->load('playlistabricot@playlistabricot');
+$langs->load('quality@quality');
+$langs->load("products");
 
 $action = 		GETPOST('action');
 $idprod = 		GETPOST('idprod', 'int');
@@ -69,7 +71,8 @@ if (empty($reshook))
 			break;
                 
                 default :
-                        $html = _liste($PDOdb, $idprod);
+                        header('Location: '.dol_buildpath('/quality/doctrace.php', 1).'?idprod='.$idprod.'&action=showSpecDoctrace');
+			exit;
 	}
 }
 
@@ -83,18 +86,18 @@ llxHeader('',$title);
 
 if ($action == 'create' && $mode == 'edit')
 {
-	load_fiche_titre("doctrace");
-	dol_fiche_head();
+	$productstatic->fetch($idprod);
+        $head = product_prepare_head($productstatic);
+        dol_fiche_head($head, 'doctrace', $langs->trans("CardProduct".$object->type), 0, $picto);
 }
 else
 {
-	
 	$picto = 'generic';
 	if($action == 'showSpecDoctrace')
 	{
             $productstatic->fetch($idprod);
-            $head = product_prepare_head($productstatic);  
-            dol_fiche_head($head, 'card', $langs->trans("playlistAbricot"), 0, $picto);
+            $head = product_prepare_head($productstatic);
+            dol_fiche_head($head, 'doctrace', $langs->trans("CardProduct".$object->type), 0, $picto);
 	}
 }
 
@@ -114,7 +117,7 @@ if ($mode == 'edit') echo $formcore->begin_form($_SERVER['PHP_SELF'], 'form_doct
 
 //?? $linkback = '<a href="'.dol_buildpath('/playlistabricot/list_playlist.php', 1).'">' . $langs->trans("BackToList") . '</a>';
 
-$htmlDefault = $TBS->render('tpl/doctrace.tpl.php'
+/*$htmlDefault = $TBS->render('tpl/doctrace.tpl.php'
 		,array() // Block
 		,array(
 				'object'=>$object
@@ -141,9 +144,9 @@ $htmlDefault = $TBS->render('tpl/doctrace.tpl.php'
 		)
 	);
 
-$html = _liste($PDOdb, $id);
+$html = _liste($PDOdb, $id);*/
 
-if($action == 'showTracks')
+if($action == 'showSpecDoctrace')
 {
 	print $html;
 }
@@ -162,26 +165,34 @@ llxFooter();
 function _liste(&$PDOdb, $id) {
 	global $conf, $langs;
 	
-	$l=new TListviewTBS('listWS');
-	$sql= "SELECT rowid, nlot, date, type, bitrate FROM llx_doctrace WHERE fk_product = ". $id;
+	$l=new TListviewTBS('quality');
+	$sql= "SELECT d.rowid, d.nlot, d.date_cre, d.comment FROM llx_doctrace d WHERE fk_product = ". $id;
 
 	$html = $l->render($PDOdb, $sql, array(
-			
-			'link'=>array(
+                        'view_type' => 'list', // default = [list], [raw], [chart]
+                        'view.mode' => 'list', // default = [list], [raw], [chart]
+                        ,'limit'=>array(
+                                'nbLine' => 25
+                        )
+			,'link'=>array(
 					//'title' => '<a href="'.dol_buildpath('/playlistabricot/card_track.php', 1).'?id=@rowid@">@val@</a>',
 					//'author' => '<a href="'.dol_buildpath('/societe/card.php', 1).'?socid=@rowid@">@val@</a>'
 			)
+                        ,'search' => array(
+                            'date_cre' => array('recherche' => 'calendars', 'allow_is_null' => false)
+                            ,'nlot' => array('recherche' => true, 'table' => 'd', 'field' => 'nlot')
+                        )
 			,'title'=>array(
-					'title'=>"Titre",
-					'author'=>"Auteur",
-					'type'=>"Type",
-					'bitrate'=>'Bitrate',
+					'nlot'=>"Numero de lot",
+					'date'=>"Date de création",
+					'commentaire'=>"Type",
+                                        'test'=>'test'
 			)
 			,'hide' => array(
 					'rowid'
 			)
 			,'liste'=>array(
-					'titre'=>'Liste des '.$langs->trans('TrackWord')
+					'titre'=>'Liste des documents de tracabilité'
 					//,'image'=>img_picto('','title.png', '', 0)
 					//,'picto_precedent'=>img_picto('','back.png', '', 0)
 					//,'picto_suivant'=>img_picto('','next.png', '', 0)
@@ -189,7 +200,7 @@ function _liste(&$PDOdb, $id) {
 					//,'messageNothing'=>"Il n'y a aucun ".$langs->trans('WorkStation')." à afficher"
 					//,'picto_search'=>img_picto('','search.png', '', 0)
 			)
-			
+            
 	));
 	return $html;	
 }

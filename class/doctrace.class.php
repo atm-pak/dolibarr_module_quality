@@ -6,8 +6,6 @@ class TDoctrace extends TObjetStd {
 		parent::set_table(MAIN_DB_PREFIX.'doctrace');
 		
 		parent::add_champs('nlot', array('type' => 'int','length'=>30));
-		parent::add_champs('commentaire', array('type'=>'string','length'=>80));
-		parent::add_champs('date', array('type'=>'date'));
                 parent::add_champs('fk_product', array('type' => 'integer', 'length' => 80, 'index' => true));
 		
 		parent::_init_vars('comment');
