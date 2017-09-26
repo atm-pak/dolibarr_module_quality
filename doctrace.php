@@ -5,6 +5,8 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/product.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
+
 dol_include_once('/quality/class/doctrace.class.php');
 dol_include_once('/quality/lib/quality.lib.php');
 
@@ -18,6 +20,8 @@ $idprod = 		GETPOST('idprod', 'int');
 $id =                   GETPOST('id');
 $com =                  GETPOST('author');
 $date = 		GETPOST('bitrate');
+
+$pageBaseUrl =          dol_buildpath('/quality/doctrace.php', 1).'?idprod='. $idprod; 
 //$doc =                  ?;
 
 $mode = 'view';
@@ -69,9 +73,13 @@ if (empty($reshook))
 		case 'showAllDocTrace':
 			$html = _listeAll($PDOdb);			
 			break;
+                case 'add':
+                        $html = _createForm($idprod);
+                        //$mode = 'edit';
+                        break;
                 
                 default :
-                        header('Location: '.dol_buildpath('/quality/doctrace.php', 1).'?idprod='.$idprod.'&action=showSpecDoctrace');
+                        header('Location: '.$pageBaseUrl.'&action=showSpecDoctrace');
 			exit;
 	}
 }
@@ -80,82 +88,46 @@ if (empty($reshook))
 /**
  * View
  */
+$formcore = new TFormCore;
+$formFile = new FormFile($db);
+
 
 $title=$langs->trans("quality");
 llxHeader('',$title);
 
-if ($action == 'create' && $mode == 'edit')
-{
-	$productstatic->fetch($idprod);
-        $head = product_prepare_head($productstatic);
-        dol_fiche_head($head, 'doctrace', $langs->trans("CardProduct".$object->type), 0, $picto);
-}
-else
-{
-	$picto = 'generic';
-	if($action == 'showSpecDoctrace')
-	{
-            $productstatic->fetch($idprod);
-            $head = product_prepare_head($productstatic);
-            dol_fiche_head($head, 'doctrace', $langs->trans("CardProduct".$object->type), 0, $picto);
-	}
-}
+//$formcore = new TFormCore;
+//$formcore->Set_typeaff($mode);
 
-$formcore = new TFormCore;
-$formcore->Set_typeaff($mode);
-
-$form = new Form($db);
+//$form = new Form($db);
 
 //?? $formconfirm = getFormConfirm($PDOdb, $form, $object, $action);
 //?? (!empty($formconfirm)) echo $formconfirm;
 
-$TBS=new TTemplateTBS();
-$TBS->TBS->protect=false;
-$TBS->TBS->noerr=true;
-
-if ($mode == 'edit') echo $formcore->begin_form($_SERVER['PHP_SELF'], 'form_doctrace');
+//if ($mode == 'edit') echo $formcore->begin_form($_SERVER['PHP_SELF'], 'form_doctrace');
 
 //?? $linkback = '<a href="'.dol_buildpath('/playlistabricot/list_playlist.php', 1).'">' . $langs->trans("BackToList") . '</a>';
 
-/*$htmlDefault = $TBS->render('tpl/doctrace.tpl.php'
-		,array() // Block
-		,array(
-				'object'=>$object
-				,'view' => array(
-					'mode' => $mode
-					,'action' => 'save'
-					,'urlcard' => dol_buildpath('/playlistabricot/card_playlist.php', 1)
-					,'urllist' => dol_buildpath('/playlistabricot/list_playlist.php', 1)
-					//,'showRef' => ($action == 'create') ? $langs->trans('Draft') : $form->showrefnav($object->generic, 'ref', $linkback, 1, 'ref', 'ref', '')
-					,'showTitle' => $formcore->texte('', 'title', $object->title, 80, 255)
-					,'showAuthorSelect' => $form->select_thirdparty_list($object->fk_author,'fk_author')
-					,'showAuthor' => $formcore->texte('', 'author', $object->author, 80, 255)
-					//,'showStatus' => $object->getLibStatut(1)
-				)
-				,'langs' => $langs
-				,'user' => $user
-				,'conf' => $conf
-				//,'TplaylistAbricot' => array(
-				//	'STATUS_DRAFT' => TplaylistAbricot::STATUS_DRAFT
-				//	,'STATUS_VALIDATED' => TplaylistAbricot::STATUS_VALIDATED
-				//	,'STATUS_REFUSED' => TplaylistAbricot::STATUS_REFUSED
-				//	,'STATUS_ACCEPTED' => TplaylistAbricot::STATUS_ACCEPTED
-				//)
-		)
-	);
+$productstatic->fetch($idprod);
+$head = product_prepare_head($productstatic);
+dol_fiche_head($head, 'doctrace', $langs->trans("CardProduct".$object->type), 0, $picto);
+print $html;
 
-$html = _liste($PDOdb, $id);*/
+if($action == 'add'){
+    $formFile->form_attach_new_file($pageBaseUrl.'&action=save','Document lié');
+    print '<div class="tabsAction">
+                <div class="inline-block divButAction"><a href="" class="butAction">Valier</a></div>
+                <!--<div class="inline-block divButAction"><a onclick="if (!confirm(\'Sur ?\')) return false;" href="" class="butAction">Cancel</a></div>-->
+                <div class="inline-block divButAction"><a href="'.$pageBaseUrl.'" class="butAction">Cancel</a></div>
+           </div>';
+    print '</tbody>';
+    print '</table>';
+    print '</div>';
+}
 
-if($action == 'showSpecDoctrace')
-{
-	print $html;
-}
-else
-{
-	print $htmlDefault;
-}
+
+
 		
-if ($mode == 'edit') echo $formcore->end_form();
+//if ($mode == 'edit') echo $formcore->end_form();
 
 //if ($mode == 'view' && $object->getId()) $somethingshown = $form->showLinkedObjectBlock($object->generic);
 
@@ -169,8 +141,8 @@ function _liste(&$PDOdb, $id) {
 	$sql= "SELECT d.rowid, d.nlot, d.date_cre, d.comment FROM llx_doctrace d WHERE fk_product = ". $id;
 
 	$html = $l->render($PDOdb, $sql, array(
-                        'view_type' => 'list', // default = [list], [raw], [chart]
-                        'view.mode' => 'list', // default = [list], [raw], [chart]
+                        'view_type' => 'list' // default = [list], [raw], [chart]
+                        ,'view.mode' => 'list' // default = [list], [raw], [chart]
                         ,'limit'=>array(
                                 'nbLine' => 25
                         )
@@ -178,10 +150,10 @@ function _liste(&$PDOdb, $id) {
 					//'title' => '<a href="'.dol_buildpath('/playlistabricot/card_track.php', 1).'?id=@rowid@">@val@</a>',
 					//'author' => '<a href="'.dol_buildpath('/societe/card.php', 1).'?socid=@rowid@">@val@</a>'
 			)
-                        ,'search' => array(
-                            'date_cre' => array('recherche' => 'calendars', 'allow_is_null' => false)
-                            ,'nlot' => array('recherche' => true, 'table' => 'd', 'field' => 'nlot')
-                        )
+                        //,'search' => array(
+                        //    'date_cre' => array('recherche' => 'calendars', 'allow_is_null' => false)
+                        //    ,'nlot' => array('recherche' => true, 'table' => 'd', 'field' => 'nlot')
+                        //)
 			,'title'=>array(
 					'nlot'=>"Numero de lot",
 					'date'=>"Date de création",
@@ -202,10 +174,48 @@ function _liste(&$PDOdb, $id) {
 			)
             
 	));
-	return $html;	
+        $btHtml = '<div class="tabsAction">
+                        <div class="inline-block divButAction"><a href="'. dol_buildpath('/quality/doctrace.php', 1).'?idprod='.$id.'&action=add" class="butAction">Ajouter</a></div>
+                   </div>';
+        
+	return $html . $btHtml;	
 }
 
 //liste de tout les doc traces pour doctrace
 function _listeAll($PDOdb, $id){
     //
+}
+
+//afficher form de création
+function _createForm($idprod){
+    
+    global $langs, $user, $conf, $db;
+    $TBS=new TTemplateTBS();
+    $TBS->TBS->protect=false;
+    $TBS->TBS->noerr=true;
+    
+    $formcore = new TFormCore;
+    //$formcore->Set_typeaff($mode);
+    //$form = new Form($db);
+    $formFile = new FormFile($db);
+    
+    $html = $TBS->render('tpl/doctrace.tpl.php'
+		,array() // Block
+		,array(
+				'object'=>''
+				,'view' => array(
+					//'mode' => $mode
+					'action' => 'save'
+					//,'showRef' => ($action == 'create') ? $langs->trans('Draft') : $form->showrefnav($object->generic, 'ref', $linkback, 1, 'ref', 'ref', '')
+					,'inputNlot' => $formcore->texte('','nlot','','')
+					,'inputCom' => $formcore->texte('','comment','','')
+					,'inputDate' => $formcore->calendrier('','date_cre','','')
+				)
+				,'langs' => $langs
+				,'user' => $user
+				,'conf' => $conf
+		)
+	);
+    
+    return $html;
 }
