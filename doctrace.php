@@ -25,8 +25,8 @@ $pageBaseUrl =          dol_buildpath('/quality/doctrace.php', 1).'?idprod='. $i
 //$doc =                  ?;
 
 $mode = 'view';
-if (empty($user->rights->playlistabricot->all->write)) 	$mode = 'view'; // Force 'view' mode if can't edit object
-else if ($action == 'create' || $action == 'edit') 	$mode = 'edit';
+//if (empty($user->rights->playlistabricot->all->write)) 	$mode = 'view'; // Force 'view' mode if can't edit object
+//else if ($action == 'create' || $action == 'edit') 	$mode = 'edit';
 
 $PDOdb = new TPDOdb;
 $object = new TDoctrace;
@@ -60,12 +60,14 @@ if (empty($reshook))
 			exit;
 			
 			break;
+                        
 		case 'delete':
 			$object->delete($PDOdb);
                         header('Location: '.dol_buildpath('/quality/doctrace.php', 1).'?idprod='.$idprod.'&action=showSpecDoctrace');
 			exit;
 			
 			break;
+                    
 		case 'showSpecDoctrace':
 			$html = _liste($PDOdb, $idprod);			
 			break;
@@ -73,8 +75,14 @@ if (empty($reshook))
 		case 'showAllDocTrace':
 			$html = _listeAll($PDOdb);			
 			break;
+                    
                 case 'add':
                         $html = _createForm($idprod);
+                        //$mode = 'edit';
+                        break;
+                    
+                case 'edit':
+                        $html = _editForm($object);
                         //$mode = 'edit';
                         break;
                 
@@ -90,7 +98,6 @@ if (empty($reshook))
  */
 $formcore = new TFormCore;
 $formFile = new FormFile($db);
-
 
 $title=$langs->trans("quality");
 llxHeader('',$title);
@@ -112,7 +119,8 @@ $head = product_prepare_head($productstatic);
 dol_fiche_head($head, 'doctrace', $langs->trans("CardProduct".$object->type), 0, $picto);
 print $html;
 
-if($action == 'add'){
+if($action == 'add')
+{
     $formFile->form_attach_new_file($pageBaseUrl.'&action=save','Document lié');
     print '<div class="tabsAction">
                 <div class="inline-block divButAction"><a href="" class="butAction">Valier</a></div>
@@ -123,8 +131,18 @@ if($action == 'add'){
     print '</table>';
     print '</div>';
 }
-
-
+if($action == 'edit')
+{
+    $formFile->form_attach_new_file($pageBaseUrl.'&action=save','Document lié');
+    print '<div class="tabsAction">
+                <div class="inline-block divButAction"><a href="" class="butAction">Valier</a></div>
+                <!--<div class="inline-block divButAction"><a onclick="if (!confirm(\'Sur ?\')) return false;" href="" class="butAction">Cancel</a></div>-->
+                <div class="inline-block divButAction"><a href="'.$pageBaseUrl.'" class="butAction">Cancel</a></div>
+           </div>';
+    print '</tbody>';
+    print '</table>';
+    print '</div>';
+}
 
 		
 //if ($mode == 'edit') echo $formcore->end_form();
@@ -156,8 +174,8 @@ function _liste(&$PDOdb, $id) {
                         //)
 			,'title'=>array(
 					'nlot'=>"Numero de lot",
-					'date'=>"Date de création",
-					'commentaire'=>"Type",
+					'date_cre'=>"Date de création",
+					'comment'=>"Commentaire",
                                         'test'=>'test'
 			)
 			,'hide' => array(
@@ -210,6 +228,40 @@ function _createForm($idprod){
 					,'inputNlot' => $formcore->texte('','nlot','','')
 					,'inputCom' => $formcore->texte('','comment','','')
 					,'inputDate' => $formcore->calendrier('','date_cre','','')
+				)
+				,'langs' => $langs
+				,'user' => $user
+				,'conf' => $conf
+		)
+	);
+    
+    return $html;
+}
+
+//afficher form d'edition
+function _editForm($object){
+    
+    global $langs, $user, $conf, $db;
+    $TBS=new TTemplateTBS();
+    $TBS->TBS->protect=false;
+    $TBS->TBS->noerr=true;
+    
+    $formcore = new TFormCore;
+    //$formcore->Set_typeaff($mode);
+    //$form = new Form($db);
+    $formFile = new FormFile($db);
+    
+    $html = $TBS->render('tpl/doctrace.tpl.php'
+		,array() // Block
+		,array(
+				'object'=>''
+				,'view' => array(
+					//'mode' => $mode
+					'action' => 'save'
+					//,'showRef' => ($action == 'create') ? $langs->trans('Draft') : $form->showrefnav($object->generic, 'ref', $linkback, 1, 'ref', 'ref', '')
+					,'inputNlot' => $formcore->texte('','nlot',150,'')
+					,'inputCom' => $formcore->texte('','comment',150,'')
+					,'inputDate' => $formcore->calendrier('','date_cre',150,'')
 				)
 				,'langs' => $langs
 				,'user' => $user
