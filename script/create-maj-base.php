@@ -12,6 +12,7 @@ if(!defined('INC_FROM_DOLIBARR')) {
 
 
 dol_include_once('/quality/class/quality.class.php');
+dol_include_once('/quality/class/doctrace.class.php');
 
 $PDOdb=new TPDOdb;
 
@@ -35,4 +36,7 @@ if(empty($Tab)) {
 
 
 $o=new TQuality;
+$o->init_db_by_vars($PDOdb);
+
+$o=new TDoctrace;
 $o->init_db_by_vars($PDOdb);
