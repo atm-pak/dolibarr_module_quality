@@ -30,6 +30,11 @@ $PDOdb = new TPDOdb;
 $object = new TDoctrace;
 $productstatic = new Product($db);
 
+$folderDocs = 'doctraces';
+
+//displayLinkToDoc(1, $idprod);
+//die('ok');
+
 if (!empty($id)) $object->load($PDOdb, $id);
 
 //$hookmanager->initHooks(array('playlistabricotcard', 'globalcard'));
@@ -67,8 +72,7 @@ if (empty($reshook))
 
             //file gestion
             if($_FILES['userfile']['size'] > 0){
-                $productstatic->fetch($idprod);//get ref product to store inside product folder
-                $upload_dir = $conf->service->multidir_output[$object->entity].'/'.$productstatic->ref.'/doctraces/'.get_exdir(0, 0, 0, 0, $object, 'doctrace').dol_sanitizeFileName($object->ref);
+                $upload_dir = $conf->quality->multidir_output[$object->entity].'/'. $folderDocs .'/'.dol_sanitizeFileName($object->ref);
                 include_once DOL_DOCUMENT_ROOT.'/core/actions_linkedfiles.inc.php';
             }
             header('Location: '.dol_buildpath('/quality/doctrace.php', 1).'?idprod='.$idprod.'&action=showSpecDoctrace');
@@ -142,48 +146,94 @@ function _liste(&$PDOdb, $id) {
     global $conf, $langs;
 
     $l=new TListviewTBS('quality');
-    $sql= "SELECT d.rowid, d.nlot, d.date_cre, d.comment FROM llx_doctrace d WHERE fk_product = ". $id;
+    $sql= "SELECT nlot, date_cre, comment, entity, ref, fk_product, rowid FROM llx_doctrace WHERE fk_product = ". $id;
 
     $html = $l->render($PDOdb, $sql, array(
         'view_type' => 'list' // default = [list], [raw], [chart]
-    ,'view.mode' => 'list' // default = [list], [raw], [chart]
-    ,'limit'=>array(
-            'nbLine' => 25
-        )
-    ,'link'=>array(
-            //'title' => '<a href="'.dol_buildpath('/playlistabricot/card_track.php', 1).'?id=@rowid@">@val@</a>',
-            //'author' => '<a href="'.dol_buildpath('/societe/card.php', 1).'?socid=@rowid@">@val@</a>'
-        )
-        //,'search' => array(
-        //    'date_cre' => array('recherche' => 'calendars', 'allow_is_null' => false)
-        //    ,'nlot' => array('recherche' => true, 'table' => 'd', 'field' => 'nlot')
-        //)
-    ,'title'=>array(
-            'nlot'=>"Numero de lot",
-            'date_cre'=>"Date de création",
-            'comment'=>"Commentaire",
-        )
-    ,'hide' => array(
-            'rowid'
-        )
-    ,'liste'=>array(
-            'titre'=>'Liste des documents de tracabilité'
-            //,'image'=>img_picto('','title.png', '', 0)
-            //,'picto_precedent'=>img_picto('','back.png', '', 0)
-            //,'picto_suivant'=>img_picto('','next.png', '', 0)
-            //,'noheader'=> (int)isset($_REQUEST['fk_soc']) | (int)isset($_REQUEST['fk_product'])
-            //,'messageNothing'=>"Il n'y a aucun ".$langs->trans('WorkStation')." à afficher"
-            //,'picto_search'=>img_picto('','search.png', '', 0)
-        )
-
+        ,'view.mode' => 'list' // default = [list], [raw], [chart]
+        ,'limit'=>array(
+                'nbLine' => 25
+            )
+        ,'link'=>array(
+                //'title' => '<a href="'.dol_buildpath('/playlistabricot/card_track.php', 1).'?id=@rowid@">@val@</a>',
+                //'author' => '<a href="'.dol_buildpath('/societe/card.php', 1).'?socid=@rowid@">@val@</a>'
+            )
+            //,'search' => array(
+            //    'date_cre' => array('recherche' => 'calendars', 'allow_is_null' => false)
+            //    ,'nlot' => array('recherche' => true, 'table' => 'd', 'field' => 'nlot')
+            //)
+        ,'title'=>array(
+                'nlot'=>"Numero de lot",
+                'date_cre'=>"Date de création",
+                'comment'=>"Commentaire",
+                'rowid'=>"Document lié"
+            )
+        ,'hide' => array(
+                'entity',
+                'fk_product',
+                'ref'
+            )
+        ,'liste'=>array(
+                'titre'=>'Liste des documents de tracabilité'
+                ,'image'=>img_picto('','title.png', '', 0)
+                //,'picto_precedent'=>img_picto('','back.png', '', 0)
+                //,'picto_suivant'=>img_picto('','next.png', '', 0)
+                //,'noheader'=> (int)isset($_REQUEST['fk_soc']) | (int)isset($_REQUEST['fk_product'])
+                //,'messageNothing'=>"Il n'y a aucun ".$langs->trans('WorkStation')." à afficher"
+                //,'picto_search'=>img_picto('','search.png', '', 0)
+            )
+        ,'eval'=>array(
+                'rowid' => '__displayLinkToDoc(@rowid@, @fk_product@)'
+                //'rowid' => '_test()'
+            )
     ));
 
     $btHtml = '<div class="tabsAction">
-                        <div class="inline-block divButAction"><a href="'. dol_buildpath('/quality/doctrace.php', 1).'?idprod='.$id.'&action=add" class="butAction">Ajouter</a></div>
-                   </div>';
+                    <div class="inline-block divButAction"><a href="'. dol_buildpath('/quality/doctrace.php', 1).'?idprod='.$id.'&action=add" class="butAction">Ajouter</a></div>
+               </div>';
 
     return $html . $btHtml;
 }
+
+//afficher le contenu du champ "Document lié"
+function __displayLinkToDoc($id, $fk_product){
+        global $db, $conf, $PDOdb;
+    $object = new TDoctrace();
+    $object->load($PDOdb, $id);
+    
+    $formfile = new FormFile($db);
+    
+    $productstatic = new Product($db);
+    $productstatic->fetch($fk_product);
+        
+    /*$filename=dol_sanitizeFileName($obj->ref);
+    $filedir=$conf->propal->dir_output . '/' . dol_sanitizeFileName($obj->ref);
+    print $formfile->getDocumentsLink($objectstatic->element, $filename, $filedir);*/
+    
+    $subdir='doctraces/'.dol_sanitizeFileName($object->ref);
+    $filedir=$conf->quality->multidir_output[$object->entity].'/'. $subdir;
+    //$urlsource=$_SERVER['PHP_SELF'].'?id='.$object->rowid;
+    
+    //var_dump($conf->quality->multidir_output, $object->element, $object->ref, $subdir, $filedir);
+    
+    $linkToDoc = $formfile->getDocumentsLink($object->element, $subdir, $filedir);
+    //var_dump($linkToDoc);
+    //die('ok');
+    $linkToDocManuel = '<a href="'.$_SERVER['DOCUMENT_ROOT'].'"/documents/quality/doctraces"';
+        
+    $html = '<table class="nobordernopadding"><tr class="nocellnopadd">
+                <tr>
+                    <td class="nobordernopadding nowrap">
+
+                    </td>
+                    <td width="16" align="right" class="nobordernopadding">
+                        '. $linkToDoc .'
+                    </td>
+                </tr>
+            </table>';    
+                    
+    return $html;
+    }
 
 //liste de tout les doc traces pour doctrace
 function _listeAll($PDOdb, $id){

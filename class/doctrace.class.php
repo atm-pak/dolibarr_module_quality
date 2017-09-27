@@ -10,6 +10,8 @@ class TDoctrace extends TObjetStd {
 		parent::add_champs('fk_product', array('type' => 'integer', 'length' => 80, 'index' => true));
 		parent::add_champs('ref', array('type' => 'string', 'length' => 80, 'index' => true));
 		parent::add_champs('entity', array('type' => 'integer', 'index' => true));
+                
+                $this->element = 'quality';
 		
 		parent::_init_vars();
 
@@ -25,7 +27,7 @@ class TDoctrace extends TObjetStd {
 
 		if ($addprov || !empty($this->is_clone))
 		{
-			$this->ref = '(DOCTRACE'.parent::getId().')';
+			$this->ref = 'DOCTRACE' . parent::getId();
 			$res = parent::save($PDOdb);
 		}
 
